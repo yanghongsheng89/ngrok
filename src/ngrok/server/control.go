@@ -10,6 +10,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+        "encoding/json"
+        "io/ioutil"
 )
 
 const (
@@ -81,6 +83,28 @@ func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
 		_ = msg.WriteMsg(ctlConn, &msg.AuthResp{Error: e.Error()})
 		ctlConn.Close()
 	}
+	userC := func(e error) {
+
+		data, err := ioutil.ReadFile("auth.json")
+		if err != nil {
+			_ = msg.WriteMsg(ctlConn, &msg.AuthResp{Error: e.Error()})
+		}
+		var conf []Users
+		err = json.Unmarshal(data, &conf)
+		if err != nil {
+			_ = msg.WriteMsg(ctlConn, &msg.AuthResp{Error: e.Error()})
+		}
+		flg := false
+		for _,us := range conf {
+			if (authMsg.User == (us.Name+":"+us.Password)) && us.Enable {
+				flg = true
+			}
+		}
+		if !flg {
+			_ = msg.WriteMsg(ctlConn, &msg.AuthResp{Error: e.Error()})
+			ctlConn.Close()
+		}
+	}
 
 	// register the clientid
 	c.id = authMsg.ClientId
@@ -95,6 +119,8 @@ func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
 	// set logging prefix
 	ctlConn.SetType("ctl")
 	ctlConn.AddLogPrefix(c.id)
+	
+	userC(fmt.Errorf("authtoken %s invalid", "is"))
 
 	if authMsg.Version != version.Proto {
 		failAuth(fmt.Errorf("Incompatible versions. Server %s, client %s. Download a new version at http://ngrok.com", version.MajorMinor(), authMsg.Version))
