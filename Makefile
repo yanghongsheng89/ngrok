@@ -46,7 +46,7 @@ all: cert fmt client server
 clean:
 	go clean -i -r ngrok/...
 	rm -rf src/ngrok/client/assets/ src/ngrok/server/assets/
-	rm -f cert/*.key cert/*.perm cert/*.srl cert/*.crt cert/*.csr
+	rm -f cert/*.key cert/*.pem cert/*.srl cert/*.crt cert/*.csr
 
 contributors:
 	echo "Contributors to ngrok, both large and small:\n" > CONTRIBUTORS
