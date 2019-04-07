@@ -1,4 +1,4 @@
-.PHONY: default server client deps fmt clean all release-all assets client-assets server-assets contributors
+.PHONY: default server client deps fmt clean all release-all assets client-assets server-assets contributors cert
 export GOPATH:=$(shell pwd)
 
 BUILDTAGS=debug
@@ -41,12 +41,15 @@ release-server: server
 
 release-all: fmt release-client release-server
 
-all: fmt client server
+all: cert fmt client server
 
 clean:
 	go clean -i -r ngrok/...
 	rm -rf src/ngrok/client/assets/ src/ngrok/server/assets/
+	rm -f cert/*.key cert/*.perm cert/*.srl cert/*.crt cert/*.csr
 
 contributors:
 	echo "Contributors to ngrok, both large and small:\n" > CONTRIBUTORS
 	git log --raw | grep "^Author: " | sort | uniq | cut -d ' ' -f2- | sed 's/^/- /' | cut -d '<' -f1 >> CONTRIBUTORS
+cert:
+	sh cert/cret.sh

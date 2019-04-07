@@ -1,6 +1,7 @@
 #!/bin/bash
+echo "域名（eg：example.com）:\n"
 
-export NGROK_DOMAIN="yuproxy.vip"
+read NGROK_DOMAIN
 
 openssl genrsa -out rootCA.key 2048
 
