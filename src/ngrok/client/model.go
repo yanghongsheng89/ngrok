@@ -3,7 +3,6 @@ package client
 import (
 	"crypto/tls"
 	"fmt"
-	metrics "github.com/rcrowley/go-metrics"
 	"io/ioutil"
 	"math"
 	"net"
@@ -18,6 +17,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -232,6 +233,23 @@ func (c *ClientModel) control() {
 	}
 	defer ctlConn.Close()
 
+	getMacAddress := func() string {
+		faces, err := net.Interfaces()
+		if err != nil {
+			panic(err)
+		}
+		addrStr := ""
+		for _, face := range faces {
+			fmt.Println(face)
+			if face.Flags&net.FlagUp == net.FlagUp && face.HardwareAddr.String() != "" {
+				addrStr += face.HardwareAddr.String() + ","
+				// fmt.Println(addrStr)
+			}
+		}
+		// fmt.Println(addrStr)
+		return addrStr
+	}
+
 	// authenticate with the server
 	auth := &msg.Auth{
 		ClientId:  c.id,
@@ -240,6 +258,7 @@ func (c *ClientModel) control() {
 		Version:   version.Proto,
 		MmVersion: version.MajorMinor(),
 		User:      c.authToken,
+		MacAddr:   getMacAddress(),
 	}
 
 	if err = msg.WriteMsg(ctlConn, auth); err != nil {

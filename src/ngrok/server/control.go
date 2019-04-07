@@ -1,8 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"ngrok/conn"
 	"ngrok/msg"
 	"ngrok/util"
@@ -10,8 +12,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-        "encoding/json"
-        "io/ioutil"
 )
 
 const (
@@ -61,6 +61,12 @@ type Control struct {
 	// synchronizer for controller shutdown of entire Control
 	shutdown *util.Shutdown
 }
+type User struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Enable   bool   `json:"enable"`
+	MacAddr  string `json:"macAddr"`
+}
 
 func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
 	var err error
@@ -89,14 +95,14 @@ func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
 		if err != nil {
 			_ = msg.WriteMsg(ctlConn, &msg.AuthResp{Error: e.Error()})
 		}
-		var conf []Users
+		var conf []User
 		err = json.Unmarshal(data, &conf)
 		if err != nil {
 			_ = msg.WriteMsg(ctlConn, &msg.AuthResp{Error: e.Error()})
 		}
 		flg := false
-		for _,us := range conf {
-			if (authMsg.User == (us.Name+":"+us.Password)) && us.Enable {
+		for _, us := range conf {
+			if (authMsg.User == (us.Name + ":" + us.Password)) && us.Enable && strings.Contains(authMsg.MacAddr, us.MacAddr) {
 				flg = true
 			}
 		}
@@ -119,7 +125,7 @@ func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
 	// set logging prefix
 	ctlConn.SetType("ctl")
 	ctlConn.AddLogPrefix(c.id)
-	
+
 	userC(fmt.Errorf("authtoken %s invalid", "is"))
 
 	if authMsg.Version != version.Proto {
